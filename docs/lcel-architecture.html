@@ -1,0 +1,623 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>LCEL & Runnable Architecture</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Fraunces:ital,wght@0,300;0,700;1,300&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg: #0d1117;
+    --surface: #161b22;
+    --surface2: #1c2128;
+    --border: #30363d;
+    --text: #e6edf3;
+    --muted: #7d8590;
+    --accent: #58a6ff;
+    --green: #3fb950;
+    --orange: #d29922;
+    --purple: #bc8cff;
+    --red: #f85149;
+    --teal: #39d353;
+  }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'DM Mono', monospace;
+    min-height: 100vh;
+    padding: 40px 20px;
+    line-height: 1.6;
+  }
+
+  h1 {
+    font-family: 'Fraunces', serif;
+    font-weight: 300;
+    font-size: clamp(1.8rem, 4vw, 2.8rem);
+    letter-spacing: -0.02em;
+    text-align: center;
+    margin-bottom: 8px;
+    background: linear-gradient(135deg, var(--accent), var(--purple));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+  }
+
+  .subtitle {
+    text-align: center;
+    color: var(--muted);
+    font-size: 0.8rem;
+    margin-bottom: 48px;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+  }
+
+  .section-label {
+    font-size: 0.65rem;
+    text-transform: uppercase;
+    letter-spacing: 0.15em;
+    color: var(--muted);
+    margin-bottom: 12px;
+    padding-left: 4px;
+  }
+
+  /* Class card */
+  .class-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    overflow: hidden;
+    transition: border-color 0.2s, transform 0.2s;
+    cursor: pointer;
+  }
+  .class-card:hover {
+    border-color: var(--accent);
+    transform: translateY(-2px);
+  }
+  .class-card.abstract { border-color: var(--purple); }
+  .class-card.abstract:hover { border-color: var(--purple); filter: brightness(1.1); }
+  .class-card.interface { border-color: var(--teal); }
+  .class-card.interface:hover { border-color: var(--teal); filter: brightness(1.1); }
+
+  .class-header {
+    padding: 12px 16px;
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .class-badge {
+    font-size: 0.6rem;
+    padding: 2px 6px;
+    border-radius: 3px;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    font-weight: 500;
+  }
+  .badge-abstract { background: rgba(188,140,255,0.15); color: var(--purple); border: 1px solid rgba(188,140,255,0.3); }
+  .badge-concrete { background: rgba(88,166,255,0.12); color: var(--accent); border: 1px solid rgba(88,166,255,0.25); }
+  .badge-mixin { background: rgba(210,153,34,0.15); color: var(--orange); border: 1px solid rgba(210,153,34,0.3); }
+
+  .class-name {
+    font-size: 0.95rem;
+    font-weight: 500;
+    color: var(--text);
+  }
+  .class-name em { font-style: italic; color: var(--muted); font-weight: 400; font-size: 0.8rem; }
+
+  .class-body { padding: 12px 16px; }
+
+  .method-list { list-style: none; }
+  .method-list li {
+    font-size: 0.72rem;
+    color: var(--muted);
+    padding: 2px 0;
+    border-bottom: 1px dashed rgba(48,54,61,0.6);
+    display: flex;
+    gap: 6px;
+    align-items: baseline;
+  }
+  .method-list li:last-child { border-bottom: none; }
+  .method-name { color: var(--green); }
+  .method-return { color: var(--orange); margin-left: auto; font-size: 0.65rem; }
+  .method-abstract { color: var(--purple); }
+  .prop-name { color: var(--accent); }
+
+  .attr-label { font-size: 0.6rem; color: var(--muted); text-transform: uppercase; letter-spacing: 0.1em; margin: 8px 0 4px; }
+
+  /* Layout grid */
+  .diagram { max-width: 1200px; margin: 0 auto; }
+
+  .row { display: flex; gap: 16px; margin-bottom: 16px; align-items: stretch; }
+  .col { flex: 1; display: flex; flex-direction: column; gap: 12px; }
+  .col-2 { flex: 2; }
+
+  /* Arrow section */
+  .arrow-row {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 24px;
+    margin: 4px 0;
+    color: var(--muted);
+    font-size: 0.7rem;
+  }
+  .arrow-row .arrow { font-size: 1.2rem; color: var(--accent); }
+
+  /* Pipe demo */
+  .pipe-demo {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 20px;
+    margin-bottom: 16px;
+  }
+  .pipe-demo h3 { font-family: 'Fraunces', serif; font-weight: 300; font-size: 1rem; color: var(--text); margin-bottom: 16px; }
+  .pipe-flow {
+    display: flex;
+    align-items: center;
+    gap: 0;
+    flex-wrap: wrap;
+    gap: 4px;
+  }
+  .pipe-node {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 8px 14px;
+    font-size: 0.75rem;
+    color: var(--text);
+    white-space: nowrap;
+    position: relative;
+  }
+  .pipe-node.prompt { border-color: var(--purple); color: var(--purple); }
+  .pipe-node.model { border-color: var(--accent); color: var(--accent); }
+  .pipe-node.parser { border-color: var(--green); color: var(--green); }
+  .pipe-node.retriever { border-color: var(--orange); color: var(--orange); }
+  .pipe-node.tool { border-color: var(--red); color: var(--red); }
+  .pipe-op {
+    font-size: 1.1rem;
+    color: var(--muted);
+    padding: 0 2px;
+    font-weight: 300;
+  }
+
+  /* Legend */
+  .legend {
+    display: flex;
+    gap: 24px;
+    flex-wrap: wrap;
+    margin-bottom: 24px;
+    padding: 14px 20px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    font-size: 0.7rem;
+    color: var(--muted);
+  }
+  .legend-item { display: flex; align-items: center; gap: 6px; }
+  .legend-dot { width: 8px; height: 8px; border-radius: 50%; }
+
+  /* Inheritance lines visual */
+  .inherit-section {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 20px;
+    margin-bottom: 16px;
+  }
+  .inherit-section h3 { font-family: 'Fraunces', serif; font-weight: 300; font-size: 0.95rem; color: var(--text); margin-bottom: 14px; }
+  .inherit-tree { font-size: 0.72rem; color: var(--muted); line-height: 2; font-family: 'DM Mono', monospace; }
+  .inherit-tree .node { color: var(--text); }
+  .inherit-tree .abs { color: var(--purple); }
+  .inherit-tree .conc { color: var(--accent); }
+  .inherit-tree .mix { color: var(--orange); }
+
+  /* tooltip */
+  .tooltip { font-size: 0.68rem; color: var(--muted); margin-top: 8px; padding-top: 8px; border-top: 1px dashed var(--border); font-style: italic; }
+
+  @media (max-width: 700px) {
+    .row { flex-direction: column; }
+    .pipe-flow { flex-direction: column; align-items: flex-start; }
+  }
+</style>
+</head>
+<body>
+<div class="diagram">
+  <h1>LCEL & Runnable Architecture</h1>
+  <p class="subtitle">LangChain Expression Language — Class Diagram Overview</p>
+
+  <div class="legend">
+    <div class="legend-item"><div class="legend-dot" style="background:var(--purple)"></div> Abstract Base</div>
+    <div class="legend-item"><div class="legend-dot" style="background:var(--accent)"></div> Concrete Class</div>
+    <div class="legend-item"><div class="legend-dot" style="background:var(--orange)"></div> Mixin / Protocol</div>
+    <div class="legend-item"><div class="legend-dot" style="background:var(--green)"></div> Key Method</div>
+    <div class="legend-item"><span style="color:var(--orange);font-size:0.8rem">→</span> Return Type</div>
+  </div>
+
+  <!-- Core Runnable ABC -->
+  <div class="section-label">① Core Abstract Interface</div>
+  <div class="class-card abstract" style="margin-bottom:16px">
+    <div class="class-header">
+      <span class="class-badge badge-abstract">abstract</span>
+      <span class="class-name">Runnable[Input, Output]</span>
+    </div>
+    <div class="class-body">
+      <div class="attr-label">Abstract / Must Implement</div>
+      <ul class="method-list">
+        <li><span class="method-abstract">◈</span><span class="method-name">invoke</span>(input: Input, config?) <span class="method-return">→ Output</span></li>
+      </ul>
+      <div class="attr-label">Provided (auto-derived from invoke)</div>
+      <ul class="method-list">
+        <li><span class="method-name">stream</span>(input, config?) <span class="method-return">→ Iterator[Output]</span></li>
+        <li><span class="method-name">astream</span>(input, config?) <span class="method-return">→ AsyncIterator[Output]</span></li>
+        <li><span class="method-name">batch</span>(inputs: list, config?) <span class="method-return">→ list[Output]</span></li>
+        <li><span class="method-name">abatch</span>(inputs: list, config?) <span class="method-return">→ list[Output]</span></li>
+        <li><span class="method-name">ainvoke</span>(input, config?) <span class="method-return">→ Output (async)</span></li>
+        <li><span class="method-name">astream_events</span>(input, version) <span class="method-return">→ AsyncIterator[Event]</span></li>
+        <li><span class="method-name">get_input_schema</span>() <span class="method-return">→ Type[BaseModel]</span></li>
+        <li><span class="method-name">get_output_schema</span>() <span class="method-return">→ Type[BaseModel]</span></li>
+        <li><span class="method-name">with_config</span>(config?) <span class="method-return">→ Runnable</span></li>
+        <li><span class="method-name">with_retry</span>(stop, wait, retry?) <span class="method-return">→ RunnableRetry</span></li>
+        <li><span class="method-name">with_fallbacks</span>(fallbacks) <span class="method-return">→ RunnableWithFallbacks</span></li>
+        <li><span class="method-name">with_types</span>(in_type, out_type) <span class="method-return">→ Runnable</span></li>
+        <li><span class="method-name">bind</span>(**kwargs) <span class="method-return">→ RunnableBinding</span></li>
+        <li><span class="method-name">pick</span>(keys) <span class="method-return">→ RunnablePick</span></li>
+        <li><span class="method-name">assign</span>(**kwargs) <span class="method-return">→ RunnableAssign</span></li>
+        <li><span class="prop-name">__or__</span> / <span class="prop-name">__ror__</span>  &nbsp;<em style="color:var(--muted);font-size:0.65rem">( | pipe operator )</em> <span class="method-return">→ RunnableSequence</span></li>
+      </ul>
+      <div class="attr-label">Config / Callbacks</div>
+      <ul class="method-list">
+        <li><span class="prop-name">config_schema</span>() <span class="method-return">→ Type[BaseModel]</span></li>
+        <li><span class="prop-name">get_graph</span>() <span class="method-return">→ Graph</span></li>
+      </ul>
+    </div>
+  </div>
+
+  <!-- Concrete Runnables -->
+  <div class="section-label">② Built-in Concrete Runnables</div>
+  <div class="row" style="margin-bottom:4px">
+    <div class="col">
+      <div class="class-card">
+        <div class="class-header">
+          <span class="class-badge badge-concrete">concrete</span>
+          <span class="class-name">RunnableSequence</span>
+        </div>
+        <div class="class-body">
+          <div class="attr-label">Attributes</div>
+          <ul class="method-list">
+            <li><span class="prop-name">first</span>: Runnable</li>
+            <li><span class="prop-name">middle</span>: list[Runnable]</li>
+            <li><span class="prop-name">last</span>: Runnable</li>
+          </ul>
+          <div class="attr-label">Created by</div>
+          <ul class="method-list">
+            <li><span style="color:var(--orange)">A | B | C</span> &nbsp;pipe operator</li>
+          </ul>
+          <div class="tooltip">Chains runnables left→right; output of each feeds the next.</div>
+        </div>
+      </div>
+    </div>
+    <div class="col">
+      <div class="class-card">
+        <div class="class-header">
+          <span class="class-badge badge-concrete">concrete</span>
+          <span class="class-name">RunnableParallel</span>
+        </div>
+        <div class="class-body">
+          <div class="attr-label">Attributes</div>
+          <ul class="method-list">
+            <li><span class="prop-name">steps</span>: dict[str, Runnable]</li>
+          </ul>
+          <div class="attr-label">Created by</div>
+          <ul class="method-list">
+            <li><span style="color:var(--orange)">{"k": runnable, …}</span></li>
+          </ul>
+          <div class="tooltip">Runs multiple runnables on the same input in parallel; returns dict.</div>
+        </div>
+      </div>
+    </div>
+    <div class="col">
+      <div class="class-card">
+        <div class="class-header">
+          <span class="class-badge badge-concrete">concrete</span>
+          <span class="class-name">RunnableLambda</span>
+        </div>
+        <div class="class-body">
+          <div class="attr-label">Attributes</div>
+          <ul class="method-list">
+            <li><span class="prop-name">func</span>: Callable</li>
+            <li><span class="prop-name">afunc</span>: AsyncCallable?</li>
+          </ul>
+          <div class="attr-label">Created by</div>
+          <ul class="method-list">
+            <li><span style="color:var(--orange)">RunnableLambda(fn)</span></li>
+          </ul>
+          <div class="tooltip">Wraps any Python function as a Runnable.</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="row" style="margin-bottom:16px">
+    <div class="col">
+      <div class="class-card">
+        <div class="class-header">
+          <span class="class-badge badge-concrete">concrete</span>
+          <span class="class-name">RunnablePassthrough</span>
+        </div>
+        <div class="class-body">
+          <ul class="method-list">
+            <li><span class="method-name">invoke</span>(x) <span class="method-return">→ x (identity)</span></li>
+            <li><span class="method-name">assign</span>(**kwargs) <span class="method-return">→ RunnableAssign</span></li>
+          </ul>
+          <div class="tooltip">Passes input unchanged; used for branching.</div>
+        </div>
+      </div>
+    </div>
+    <div class="col">
+      <div class="class-card">
+        <div class="class-header">
+          <span class="class-badge badge-concrete">concrete</span>
+          <span class="class-name">RunnableBinding</span>
+        </div>
+        <div class="class-body">
+          <div class="attr-label">Attributes</div>
+          <ul class="method-list">
+            <li><span class="prop-name">bound</span>: Runnable</li>
+            <li><span class="prop-name">kwargs</span>: dict</li>
+            <li><span class="prop-name">config</span>: RunnableConfig</li>
+          </ul>
+          <div class="tooltip">Wraps a Runnable with pre-bound kwargs or config. Created via .bind().</div>
+        </div>
+      </div>
+    </div>
+    <div class="col">
+      <div class="class-card">
+        <div class="class-header">
+          <span class="class-badge badge-concrete">concrete</span>
+          <span class="class-name">RunnableWithFallbacks</span>
+        </div>
+        <div class="class-body">
+          <div class="attr-label">Attributes</div>
+          <ul class="method-list">
+            <li><span class="prop-name">runnable</span>: Runnable</li>
+            <li><span class="prop-name">fallbacks</span>: list[Runnable]</li>
+            <li><span class="prop-name">exceptions_to_handle</span></li>
+          </ul>
+          <div class="tooltip">Tries primary, falls back on exception. Created via .with_fallbacks().</div>
+        </div>
+      </div>
+    </div>
+    <div class="col">
+      <div class="class-card">
+        <div class="class-header">
+          <span class="class-badge badge-concrete">concrete</span>
+          <span class="class-name">RunnableBranch</span>
+        </div>
+        <div class="class-body">
+          <div class="attr-label">Attributes</div>
+          <ul class="method-list">
+            <li><span class="prop-name">branches</span>: list[(condition, Runnable)]</li>
+            <li><span class="prop-name">default</span>: Runnable</li>
+          </ul>
+          <div class="tooltip">Conditional routing; evaluates conditions in order.</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- LangChain component classes -->
+  <div class="section-label">③ LangChain Component Runnables (extend Runnable)</div>
+  <div class="row" style="margin-bottom:16px">
+    <div class="col">
+      <div class="class-card">
+        <div class="class-header">
+          <span class="class-badge badge-abstract">abstract</span>
+          <span class="class-name">BaseLanguageModel</span>
+        </div>
+        <div class="class-body">
+          <ul class="method-list">
+            <li><span class="method-abstract">◈</span><span class="method-name">invoke</span>(messages) <span class="method-return">→ BaseMessage</span></li>
+            <li><span class="method-name">stream</span> / <span class="method-name">batch</span></li>
+            <li><span class="method-name">bind_tools</span>(tools) <span class="method-return">→ Runnable</span></li>
+            <li><span class="method-name">with_structured_output</span>() <span class="method-return">→ Runnable</span></li>
+          </ul>
+          <div class="attr-label">Subtypes</div>
+          <ul class="method-list">
+            <li><span style="color:var(--accent)">BaseChatModel</span> (chat models)</li>
+            <li><span style="color:var(--accent)">BaseLLM</span> (completion models)</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+    <div class="col">
+      <div class="class-card">
+        <div class="class-header">
+          <span class="class-badge badge-abstract">abstract</span>
+          <span class="class-name">BasePromptTemplate</span>
+        </div>
+        <div class="class-body">
+          <ul class="method-list">
+            <li><span class="method-name">invoke</span>(dict) <span class="method-return">→ PromptValue</span></li>
+            <li><span class="method-name">format</span>(**kwargs) <span class="method-return">→ str</span></li>
+            <li><span class="method-name">format_messages</span>() <span class="method-return">→ list[Msg]</span></li>
+          </ul>
+          <div class="attr-label">Subtypes</div>
+          <ul class="method-list">
+            <li><span style="color:var(--accent)">PromptTemplate</span></li>
+            <li><span style="color:var(--accent)">ChatPromptTemplate</span></li>
+            <li><span style="color:var(--accent)">FewShotPromptTemplate</span></li>
+          </ul>
+        </div>
+      </div>
+    </div>
+    <div class="col">
+      <div class="class-card">
+        <div class="class-header">
+          <span class="class-badge badge-abstract">abstract</span>
+          <span class="class-name">BaseOutputParser</span>
+        </div>
+        <div class="class-body">
+          <ul class="method-list">
+            <li><span class="method-abstract">◈</span><span class="method-name">parse</span>(text) <span class="method-return">→ T</span></li>
+            <li><span class="method-name">invoke</span>(msg_or_str) <span class="method-return">→ T</span></li>
+          </ul>
+          <div class="attr-label">Subtypes</div>
+          <ul class="method-list">
+            <li><span style="color:var(--accent)">StrOutputParser</span></li>
+            <li><span style="color:var(--accent)">JsonOutputParser</span></li>
+            <li><span style="color:var(--accent)">PydanticOutputParser</span></li>
+          </ul>
+        </div>
+      </div>
+    </div>
+    <div class="col">
+      <div class="class-card">
+        <div class="class-header">
+          <span class="class-badge badge-abstract">abstract</span>
+          <span class="class-name">BaseRetriever</span>
+        </div>
+        <div class="class-body">
+          <ul class="method-list">
+            <li><span class="method-abstract">◈</span><span class="method-name">_get_relevant_documents</span>(query) <span class="method-return">→ list[Doc]</span></li>
+            <li><span class="method-name">invoke</span>(query) <span class="method-return">→ list[Doc]</span></li>
+            <li><span class="method-name">get_relevant_documents</span>(query)</li>
+          </ul>
+          <div class="attr-label">Subtypes</div>
+          <ul class="method-list">
+            <li><span style="color:var(--accent)">VectorStoreRetriever</span></li>
+            <li><span style="color:var(--accent)">MultiQueryRetriever</span></li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- RunnableConfig -->
+  <div class="section-label">④ RunnableConfig — Passed through all invoke/stream/batch calls</div>
+  <div class="row" style="margin-bottom:16px">
+    <div class="col col-2">
+      <div class="class-card" style="border-color:var(--orange)">
+        <div class="class-header">
+          <span class="class-badge badge-mixin">TypedDict</span>
+          <span class="class-name">RunnableConfig</span>
+        </div>
+        <div class="class-body">
+          <ul class="method-list">
+            <li><span class="prop-name">tags</span>: list[str]</li>
+            <li><span class="prop-name">metadata</span>: dict</li>
+            <li><span class="prop-name">callbacks</span>: Callbacks</li>
+            <li><span class="prop-name">run_name</span>: str</li>
+            <li><span class="prop-name">max_concurrency</span>: int</li>
+            <li><span class="prop-name">recursion_limit</span>: int</li>
+            <li><span class="prop-name">configurable</span>: dict &nbsp;<em style="font-size:0.65rem">(for RunnableConfigurableFields)</em></li>
+          </ul>
+        </div>
+      </div>
+    </div>
+    <div class="col">
+      <div class="class-card" style="border-color:var(--orange)">
+        <div class="class-header">
+          <span class="class-badge badge-mixin">mixin</span>
+          <span class="class-name">RunnableSerializable</span>
+        </div>
+        <div class="class-body">
+          <ul class="method-list">
+            <li><span class="method-name">to_json</span>() <span class="method-return">→ dict</span></li>
+            <li><span class="method-name">from_json</span>(dict) <span class="method-return">→ Runnable</span></li>
+            <li><span class="method-name">configurable_fields</span>(...)</li>
+            <li><span class="method-name">configurable_alternatives</span>(...)</li>
+          </ul>
+          <div class="tooltip">Adds serialization + runtime configurability.</div>
+        </div>
+      </div>
+    </div>
+    <div class="col">
+      <div class="class-card" style="border-color:var(--orange)">
+        <div class="class-header">
+          <span class="class-badge badge-mixin">mixin</span>
+          <span class="class-name">RunnableRetry</span>
+        </div>
+        <div class="class-body">
+          <ul class="method-list">
+            <li><span class="prop-name">bound</span>: Runnable</li>
+            <li><span class="prop-name">stop</span>: stop strategy</li>
+            <li><span class="prop-name">wait</span>: wait strategy</li>
+            <li><span class="prop-name">retry</span>: retry condition</li>
+          </ul>
+          <div class="tooltip">Adds tenacity-based retry. Created via .with_retry().</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Pipe demo -->
+  <div class="pipe-demo">
+    <h3>| Pipe Composition Examples</h3>
+    <div style="margin-bottom:14px">
+      <div class="attr-label">Simple RAG chain</div>
+      <div class="pipe-flow">
+        <div class="pipe-node retriever">retriever</div>
+        <div class="pipe-op">|</div>
+        <div class="pipe-node prompt">prompt</div>
+        <div class="pipe-op">|</div>
+        <div class="pipe-node model">llm</div>
+        <div class="pipe-op">|</div>
+        <div class="pipe-node parser">StrOutputParser</div>
+      </div>
+    </div>
+    <div style="margin-bottom:14px">
+      <div class="attr-label">Parallel branch then merge</div>
+      <div class="pipe-flow">
+        <div class="pipe-node" style="border-color:var(--muted)">input</div>
+        <div class="pipe-op">|</div>
+        <div class="pipe-node" style="border-color:var(--orange);color:var(--orange)">RunnableParallel<br><span style="font-size:0.65rem">{context: retriever, question: passthrough}</span></div>
+        <div class="pipe-op">|</div>
+        <div class="pipe-node prompt">prompt</div>
+        <div class="pipe-op">|</div>
+        <div class="pipe-node model">llm</div>
+      </div>
+    </div>
+    <div>
+      <div class="attr-label">With fallback</div>
+      <div class="pipe-flow">
+        <div class="pipe-node prompt">prompt</div>
+        <div class="pipe-op">|</div>
+        <div class="pipe-node model">gpt-4<br><span style="font-size:0.65rem">.with_fallbacks([gpt-3.5])</span></div>
+        <div class="pipe-op">|</div>
+        <div class="pipe-node parser">parser</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Inheritance tree -->
+  <div class="inherit-section">
+    <h3>Inheritance Hierarchy</h3>
+    <div class="inherit-tree">
+      <span class="abs">Runnable[Input, Output]</span> &nbsp;&nbsp;<em style="color:var(--muted);font-size:0.65rem">(ABC)</em><br>
+      &nbsp;├── <span class="abs">RunnableSerializable</span> &nbsp;<em style="color:var(--muted);font-size:0.65rem">(adds json + configurable)</em><br>
+      &nbsp;│&nbsp;&nbsp;&nbsp;├── <span class="conc">RunnableSequence</span><br>
+      &nbsp;│&nbsp;&nbsp;&nbsp;├── <span class="conc">RunnableParallel</span><br>
+      &nbsp;│&nbsp;&nbsp;&nbsp;├── <span class="conc">RunnableLambda</span><br>
+      &nbsp;│&nbsp;&nbsp;&nbsp;├── <span class="conc">RunnablePassthrough</span><br>
+      &nbsp;│&nbsp;&nbsp;&nbsp;├── <span class="conc">RunnableBranch</span><br>
+      &nbsp;│&nbsp;&nbsp;&nbsp;├── <span class="conc">RunnableBinding</span> &nbsp;<em style="color:var(--muted);font-size:0.65rem">(.bind(), .with_config())</em><br>
+      &nbsp;│&nbsp;&nbsp;&nbsp;├── <span class="conc">RunnableWithFallbacks</span><br>
+      &nbsp;│&nbsp;&nbsp;&nbsp;├── <span class="conc">RunnableRetry</span><br>
+      &nbsp;│&nbsp;&nbsp;&nbsp;├── <span class="abs">BaseLanguageModel</span><br>
+      &nbsp;│&nbsp;&nbsp;&nbsp;│&nbsp;&nbsp;&nbsp;├── <span class="abs">BaseChatModel</span>&nbsp;→&nbsp;<span class="conc">ChatOpenAI</span>, <span class="conc">ChatAnthropic</span>, …<br>
+      &nbsp;│&nbsp;&nbsp;&nbsp;│&nbsp;&nbsp;&nbsp;└── <span class="abs">BaseLLM</span>&nbsp;→&nbsp;<span class="conc">OpenAI</span>, …<br>
+      &nbsp;│&nbsp;&nbsp;&nbsp;├── <span class="abs">BasePromptTemplate</span>&nbsp;→&nbsp;<span class="conc">ChatPromptTemplate</span>, <span class="conc">PromptTemplate</span>, …<br>
+      &nbsp;│&nbsp;&nbsp;&nbsp;├── <span class="abs">BaseOutputParser</span>&nbsp;→&nbsp;<span class="conc">StrOutputParser</span>, <span class="conc">JsonOutputParser</span>, …<br>
+      &nbsp;│&nbsp;&nbsp;&nbsp;└── <span class="abs">BaseRetriever</span>&nbsp;→&nbsp;<span class="conc">VectorStoreRetriever</span>, …<br>
+    </div>
+  </div>
+
+  <div style="text-align:center;color:var(--muted);font-size:0.65rem;padding:12px 0;">
+    LangChain ≥ 0.1 · langchain-core · LCEL (LangChain Expression Language)
+  </div>
+</div>
+</body>
+</html>
