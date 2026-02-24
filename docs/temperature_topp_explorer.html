@@ -1,0 +1,665 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Temperature & Top-P Explorer</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=Inconsolata:wght@400;500;600&display=swap');
+
+  :root {
+    --bg: #0e0e12;
+    --panel: #16161d;
+    --card: #1e1e28;
+    --border: #2a2a38;
+    --text: #e8e6f0;
+    --muted: #6a6880;
+    --temp-col: #ff6b6b;
+    --topp-col: #4ecdc4;
+    --accent: #ffd93d;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Syne', sans-serif;
+    min-height: 100vh;
+    padding: 32px 20px 60px;
+  }
+
+  /* ── HEADER ── */
+  header {
+    text-align: center;
+    margin-bottom: 36px;
+  }
+  header h1 {
+    font-size: clamp(1.6rem, 4vw, 2.6rem);
+    font-weight: 800;
+    letter-spacing: -0.04em;
+    line-height: 1.1;
+    margin-bottom: 10px;
+  }
+  .h-temp { color: var(--temp-col); }
+  .h-topp { color: var(--topp-col); }
+  header p {
+    font-family: 'Inconsolata', monospace;
+    font-size: 0.78rem;
+    color: var(--muted);
+    letter-spacing: 0.05em;
+  }
+  .prompt-display {
+    display: inline-block;
+    margin-top: 12px;
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 8px 18px;
+    font-family: 'Inconsolata', monospace;
+    font-size: 0.85rem;
+    color: var(--accent);
+  }
+  .prompt-display span { color: var(--muted); font-size: 0.72rem; margin-right: 8px; }
+
+  .wrap { max-width: 1060px; margin: 0 auto; }
+
+  /* ── SLIDERS PANEL ── */
+  .controls {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+    margin-bottom: 28px;
+  }
+
+  .slider-card {
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 20px 22px;
+  }
+  .slider-card.temp-card { border-top: 3px solid var(--temp-col); }
+  .slider-card.topp-card { border-top: 3px solid var(--topp-col); }
+
+  .sc-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    margin-bottom: 6px;
+  }
+  .sc-name {
+    font-size: 0.72rem;
+    font-weight: 700;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+  }
+  .temp-card .sc-name { color: var(--temp-col); }
+  .topp-card .sc-name { color: var(--topp-col); }
+
+  .sc-val {
+    font-family: 'Inconsolata', monospace;
+    font-size: 1.5rem;
+    font-weight: 600;
+  }
+  .temp-card .sc-val { color: var(--temp-col); }
+  .topp-card .sc-val { color: var(--topp-col); }
+
+  .sc-desc {
+    font-size: 0.72rem;
+    color: var(--muted);
+    margin-bottom: 14px;
+    line-height: 1.45;
+  }
+
+  input[type=range] {
+    -webkit-appearance: none;
+    width: 100%;
+    height: 6px;
+    border-radius: 3px;
+    outline: none;
+    cursor: pointer;
+    margin-bottom: 8px;
+  }
+  .temp-card input[type=range] { background: linear-gradient(to right, #1a1a22, var(--temp-col)); }
+  .topp-card input[type=range] { background: linear-gradient(to right, #1a1a22, var(--topp-col)); }
+
+  input[type=range]::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    width: 18px; height: 18px;
+    border-radius: 50%;
+    border: 2px solid var(--bg);
+    cursor: pointer;
+    transition: transform 0.1s;
+  }
+  .temp-card input[type=range]::-webkit-slider-thumb { background: var(--temp-col); }
+  .topp-card input[type=range]::-webkit-slider-thumb { background: var(--topp-col); }
+  input[type=range]::-webkit-slider-thumb:hover { transform: scale(1.2); }
+
+  .sc-labels {
+    display: flex;
+    justify-content: space-between;
+    font-family: 'Inconsolata', monospace;
+    font-size: 0.6rem;
+    color: var(--muted);
+  }
+
+  /* ── MAIN GRID ── */
+  .main-grid {
+    display: grid;
+    grid-template-columns: 1fr 1.5fr;
+    gap: 16px;
+    margin-bottom: 20px;
+  }
+
+  /* PROBABILITY CHART */
+  .chart-card {
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 18px 20px;
+  }
+  .chart-title {
+    font-size: 0.65rem;
+    font-weight: 700;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin-bottom: 14px;
+  }
+  .chart-subtitle {
+    font-size: 0.62rem;
+    color: var(--muted);
+    margin-top: -10px;
+    margin-bottom: 14px;
+    font-family: 'Inconsolata', monospace;
+  }
+
+  canvas#probChart {
+    width: 100%;
+    display: block;
+  }
+
+  .chart-legend {
+    display: flex;
+    gap: 16px;
+    margin-top: 10px;
+    flex-wrap: wrap;
+  }
+  .legend-item {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    font-size: 0.62rem;
+    color: var(--muted);
+    font-family: 'Inconsolata', monospace;
+  }
+  .legend-dot {
+    width: 8px; height: 8px;
+    border-radius: 50%;
+    flex-shrink: 0;
+  }
+
+  /* TOP-P CUTOFF INDICATOR */
+  .topp-zone-label {
+    font-size: 0.6rem;
+    font-family: 'Inconsolata', monospace;
+    color: var(--topp-col);
+    margin-top: 6px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .topp-zone-label::before {
+    content: '';
+    display: inline-block;
+    width: 10px; height: 2px;
+    background: var(--topp-col);
+  }
+
+  /* OUTPUT PANEL */
+  .output-card {
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 18px 20px;
+    display: flex;
+    flex-direction: column;
+  }
+  .output-title {
+    font-size: 0.65rem;
+    font-weight: 700;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin-bottom: 14px;
+  }
+
+  .output-text {
+    font-family: 'Inconsolata', monospace;
+    font-size: 0.88rem;
+    line-height: 1.7;
+    color: var(--text);
+    flex: 1;
+    min-height: 120px;
+    transition: opacity 0.2s;
+  }
+  .output-text .prompt-part { color: var(--muted); }
+  .output-text .gen-part { color: var(--text); }
+
+  .output-meta {
+    margin-top: 14px;
+    padding-top: 12px;
+    border-top: 1px solid var(--border);
+    display: flex;
+    gap: 16px;
+    flex-wrap: wrap;
+  }
+  .meta-tag {
+    font-family: 'Inconsolata', monospace;
+    font-size: 0.62rem;
+    padding: 3px 8px;
+    border-radius: 4px;
+    border: 1px solid;
+  }
+  .mt-temp { border-color: var(--temp-col); color: var(--temp-col); background: rgba(255,107,107,0.08); }
+  .mt-topp { border-color: var(--topp-col); color: var(--topp-col); background: rgba(78,205,196,0.08); }
+  .mt-mode { border-color: var(--accent);   color: var(--accent);   background: rgba(255,217,61,0.08); }
+
+  /* ── COMPARISON TABLE ── */
+  .comparison {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 10px;
+    margin-bottom: 20px;
+  }
+  .cmp-cell {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 12px 14px;
+    cursor: pointer;
+    transition: border-color 0.15s, transform 0.1s;
+    position: relative;
+  }
+  .cmp-cell:hover { transform: translateY(-2px); }
+  .cmp-cell.active { border-color: var(--accent); }
+  .cmp-cell.active::after {
+    content: '▶ active';
+    position: absolute;
+    top: 6px; right: 8px;
+    font-family: 'Inconsolata', monospace;
+    font-size: 0.55rem;
+    color: var(--accent);
+    letter-spacing: 0.05em;
+  }
+
+  .cmp-params {
+    display: flex;
+    gap: 6px;
+    margin-bottom: 8px;
+    flex-wrap: wrap;
+  }
+  .cp-t, .cp-p {
+    font-family: 'Inconsolata', monospace;
+    font-size: 0.62rem;
+    padding: 2px 6px;
+    border-radius: 3px;
+    font-weight: 600;
+  }
+  .cp-t { background: rgba(255,107,107,0.15); color: var(--temp-col); }
+  .cp-p { background: rgba(78,205,196,0.15); color: var(--topp-col); }
+
+  .cmp-label {
+    font-size: 0.65rem;
+    font-weight: 700;
+    color: var(--text);
+    margin-bottom: 5px;
+    letter-spacing: 0.02em;
+  }
+  .cmp-sample {
+    font-family: 'Inconsolata', monospace;
+    font-size: 0.68rem;
+    color: var(--muted);
+    line-height: 1.5;
+    font-style: italic;
+  }
+
+  /* ── EXPLAINER ── */
+  .explainers {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+  }
+  .exp-card {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 16px 18px;
+  }
+  .exp-card.temp-exp { border-left: 3px solid var(--temp-col); }
+  .exp-card.topp-exp { border-left: 3px solid var(--topp-col); }
+  .exp-title {
+    font-size: 0.68rem;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    margin-bottom: 8px;
+  }
+  .temp-exp .exp-title { color: var(--temp-col); }
+  .topp-exp .exp-title { color: var(--topp-col); }
+  .exp-body {
+    font-size: 0.74rem;
+    color: var(--muted);
+    line-height: 1.6;
+  }
+  .exp-body strong { color: var(--text); }
+
+  @media (max-width: 720px) {
+    .controls { grid-template-columns: 1fr; }
+    .main-grid { grid-template-columns: 1fr; }
+    .comparison { grid-template-columns: 1fr 1fr; }
+    .explainers { grid-template-columns: 1fr; }
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header>
+    <h1><span class="h-temp">Temperature</span> & <span class="h-topp">Top‑P</span> Explorer</h1>
+    <p>Move the sliders to see how each parameter shapes what the model generates</p>
+    <div class="prompt-display"><span>PROMPT →</span>"The astronaut opened the airlock and saw..."</div>
+  </header>
+
+  <!-- SLIDERS -->
+  <div class="controls">
+    <div class="slider-card temp-card">
+      <div class="sc-header">
+        <span class="sc-name">🌡 Temperature</span>
+        <span class="sc-val" id="tempVal">0.7</span>
+      </div>
+      <p class="sc-desc">Controls overall <strong style="color:var(--temp-col)">randomness & creativity</strong>. Flattens or sharpens the entire probability distribution across all tokens.</p>
+      <input type="range" id="tempSlider" min="0" max="2" step="0.05" value="0.7">
+      <div class="sc-labels"><span>0 — deterministic</span><span>2 — chaotic</span></div>
+    </div>
+
+    <div class="slider-card topp-card">
+      <div class="sc-header">
+        <span class="sc-name">🎯 Top‑P (nucleus)</span>
+        <span class="sc-val" id="toppVal">0.9</span>
+      </div>
+      <p class="sc-desc">Controls the <strong style="color:var(--topp-col)">vocabulary pool size</strong>. Keeps only the top tokens whose cumulative probability reaches P, cutting off the long tail.</p>
+      <input type="range" id="toppSlider" min="0.01" max="1" step="0.01" value="0.9">
+      <div class="sc-labels"><span>0.01 — 1-2 words</span><span>1.0 — all words</span></div>
+    </div>
+  </div>
+
+  <!-- CHART + OUTPUT -->
+  <div class="main-grid">
+    <div class="chart-card">
+      <div class="chart-title">Token Probability Distribution</div>
+      <div class="chart-subtitle" id="chartSubtitle">next-word candidates for "...and saw"</div>
+      <canvas id="probChart" height="220"></canvas>
+      <div class="topp-zone-label" id="toppLabel">top‑p = 0.90 → sampling from top 6 tokens</div>
+      <div class="chart-legend">
+        <div class="legend-item"><div class="legend-dot" style="background:var(--topp-col)"></div>within top‑p cutoff</div>
+        <div class="legend-item"><div class="legend-dot" style="background:var(--border)"></div>excluded by top‑p</div>
+      </div>
+    </div>
+
+    <div class="output-card">
+      <div class="output-title">🚀 Generated Output</div>
+      <div class="output-text" id="outputText">
+        <span class="prompt-part">"The astronaut opened the airlock and saw... "</span><span class="gen-part" id="genText"></span>
+      </div>
+      <div class="output-meta">
+        <span class="meta-tag mt-temp" id="metaTemp">temp: 0.70</span>
+        <span class="meta-tag mt-topp" id="metaTopp">top‑p: 0.90</span>
+        <span class="meta-tag mt-mode" id="metaMode">mode: balanced</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- PRESET COMPARISON -->
+  <div style="font-size:0.65rem;font-weight:700;letter-spacing:0.12em;text-transform:uppercase;color:var(--muted);margin-bottom:10px;">Click a preset to load it</div>
+  <div class="comparison" id="presetGrid">
+
+    <div class="cmp-cell" data-temp="0.1" data-topp="0.5">
+      <div class="cmp-params"><span class="cp-t">T=0.1</span><span class="cp-p">P=0.5</span></div>
+      <div class="cmp-label">Deterministic</div>
+      <div class="cmp-sample">"…the surface of Mars, barren and red as expected. The mission was on schedule."</div>
+    </div>
+
+    <div class="cmp-cell" data-temp="0.7" data-topp="0.9">
+      <div class="cmp-params"><span class="cp-t">T=0.7</span><span class="cp-p">P=0.9</span></div>
+      <div class="cmp-label">Balanced (default)</div>
+      <div class="cmp-sample">"…a vast, glittering field of debris drifting silently in the dark. Something moved."</div>
+    </div>
+
+    <div class="cmp-cell" data-temp="1.4" data-topp="0.95">
+      <div class="cmp-params"><span class="cp-t">T=1.4</span><span class="cp-p">P=0.95</span></div>
+      <div class="cmp-label">Creative</div>
+      <div class="cmp-sample">"…a cathedral of frozen light, humming with a frequency she felt in her molars."</div>
+    </div>
+
+    <div class="cmp-cell" data-temp="1.9" data-topp="1.0">
+      <div class="cmp-params"><span class="cp-t">T=1.9</span><span class="cp-p">P=1.0</span></div>
+      <div class="cmp-label">Chaotic</div>
+      <div class="cmp-sample">"…seventeen moons singing backwards through a violet corridor of collapsed grammar—"</div>
+    </div>
+
+  </div>
+
+  <!-- EXPLAINERS -->
+  <div class="explainers">
+    <div class="exp-card temp-exp">
+      <div class="exp-title">🌡 How Temperature Works</div>
+      <div class="exp-body">
+        Temperature divides the logits (raw scores) before the softmax step. <strong>Low temperature (→0)</strong> makes the highest-probability token dominate — nearly always chosen. <strong>High temperature (→2)</strong> flattens everything out, making unlikely tokens competitive. Think of it as turning a peaked mountain into a gentle hill. It reshapes the <em>whole</em> distribution simultaneously.
+      </div>
+    </div>
+    <div class="exp-card topp-exp">
+      <div class="exp-title">🎯 How Top‑P Works</div>
+      <div class="exp-body">
+        Top‑P (nucleus sampling) works <em>after</em> temperature is applied. It sorts tokens by probability, then draws a cutoff line where the cumulative sum first exceeds P. <strong>Low top‑p (0.1)</strong> means only 1–3 tokens survive. <strong>High top‑p (0.95+)</strong> lets dozens of candidates in. Crucially, it adapts to context: when the model is confident, fewer tokens pass; when uncertain, more do.
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<script>
+// ── DATA ──
+const WORDS = [
+  "a","the","vast","nothing","something","stars","darkness","light",
+  "an","her","his","strange","cold","blinding","empty","alien",
+  "infinite","shimmering","impossible","red","black","silent","ancient","crystalline"
+];
+
+// Base logits (before temperature)
+const BASE_LOGITS = [
+  4.2, 3.8, 3.1, 2.9, 2.7, 2.5, 2.3, 2.1,
+  1.9, 1.7, 1.6, 1.4, 1.3, 1.1, 0.9, 0.7,
+  0.5, 0.3, 0.1, -0.1, -0.3, -0.5, -0.8, -1.2
+];
+
+function softmax(logits, temp) {
+  const scaled = logits.map(l => l / Math.max(temp, 0.01));
+  const maxVal = Math.max(...scaled);
+  const exps = scaled.map(l => Math.exp(l - maxVal));
+  const sum = exps.reduce((a, b) => a + b, 0);
+  return exps.map(e => e / sum);
+}
+
+function getTopPCutoff(probs, topP) {
+  const sorted = [...probs].map((p, i) => ({ p, i })).sort((a, b) => b.p - a.p);
+  let cumSum = 0;
+  let cutoffIdx = sorted.length;
+  for (let k = 0; k < sorted.length; k++) {
+    cumSum += sorted[k].p;
+    if (cumSum >= topP) { cutoffIdx = k + 1; break; }
+  }
+  const includedIndices = new Set(sorted.slice(0, cutoffIdx).map(x => x.i));
+  return includedIndices;
+}
+
+// Preset outputs
+const OUTPUTS = {
+  'det':  'the barren red surface of Mars. The dust swirled in slow, predictable arcs. Mission parameters were nominal. She sealed the airlock and filed her report.',
+  'bal':  'a vast field of glittering debris drifting silently against the stars. Something large rotated slowly at the edge of visibility. She reached for the radio.',
+  'cre':  'a cathedral of frozen light stretching impossibly wide, humming at a frequency she felt behind her teeth. The stars were wrong. All of them, wrong.',
+  'cha':  'seventeen moons unfolding backwards through a violet corridor of collapsed grammar — and her bones understood before her mind did what this meant for Tuesday —'
+};
+
+function getOutputForSettings(temp, topP) {
+  if (temp <= 0.3 && topP <= 0.6) return OUTPUTS.det;
+  if (temp >= 1.6) return OUTPUTS.cha;
+  if (temp >= 1.1 || topP >= 0.92) return OUTPUTS.cre;
+  return OUTPUTS.bal;
+}
+
+function getModeLabel(temp, topP) {
+  if (temp <= 0.3) return 'mode: deterministic';
+  if (temp <= 0.85 && topP <= 0.85) return 'mode: focused';
+  if (temp <= 1.0) return 'mode: balanced';
+  if (temp <= 1.5) return 'mode: creative';
+  return 'mode: chaotic';
+}
+
+// ── CANVAS CHART ──
+const canvas = document.getElementById('probChart');
+const ctx = canvas.getContext('2d');
+
+function drawChart(temp, topP) {
+  const DPR = window.devicePixelRatio || 1;
+  const W = canvas.parentElement.clientWidth - 40;
+  const H = 220;
+  canvas.width = W * DPR;
+  canvas.height = H * DPR;
+  canvas.style.width = W + 'px';
+  canvas.style.height = H + 'px';
+  ctx.scale(DPR, DPR);
+
+  ctx.clearRect(0, 0, W, H);
+
+  const probs = softmax(BASE_LOGITS, temp);
+  const included = getTopPCutoff(probs, topP);
+
+  const N = 16; // show top 16 words
+  const BAR_W = (W - 60) / N;
+  const MAX_H = H - 50;
+  const maxP = Math.max(...probs);
+
+  // Grid lines
+  ctx.strokeStyle = '#2a2a38';
+  ctx.lineWidth = 1;
+  for (let g = 0; g <= 4; g++) {
+    const y = 10 + (MAX_H / 4) * g;
+    ctx.beginPath();
+    ctx.moveTo(50, y);
+    ctx.lineTo(W - 10, y);
+    ctx.stroke();
+    ctx.fillStyle = '#6a6880';
+    ctx.font = `${10 / DPR + 10}px Inconsolata`;
+    ctx.textAlign = 'right';
+    const label = ((1 - g / 4) * maxP * 100).toFixed(0) + '%';
+    ctx.fillText(label, 45, y + 4);
+  }
+
+  // Bars
+  probs.slice(0, N).forEach((p, i) => {
+    const x = 52 + i * BAR_W;
+    const barH = (p / maxP) * MAX_H;
+    const y = 10 + MAX_H - barH;
+    const isIn = included.has(i);
+
+    // Bar fill
+    if (isIn) {
+      const grad = ctx.createLinearGradient(0, y, 0, y + barH);
+      grad.addColorStop(0, 'rgba(78,205,196,0.9)');
+      grad.addColorStop(1, 'rgba(78,205,196,0.3)');
+      ctx.fillStyle = grad;
+    } else {
+      ctx.fillStyle = 'rgba(42,42,56,0.8)';
+    }
+    const bw = BAR_W - 4;
+    ctx.beginPath();
+    ctx.roundRect(x, y, bw, barH, [3, 3, 0, 0]);
+    ctx.fill();
+
+    // Word label
+    ctx.save();
+    ctx.translate(x + bw / 2, H - 6);
+    ctx.rotate(-Math.PI / 4);
+    ctx.textAlign = 'right';
+    ctx.font = '10px Inconsolata';
+    ctx.fillStyle = isIn ? '#e8e6f0' : '#6a6880';
+    ctx.fillText(WORDS[i], 0, 0);
+    ctx.restore();
+
+    // Probability label on tall bars
+    if (barH > 22) {
+      ctx.fillStyle = isIn ? '#0e0e12' : '#6a6880';
+      ctx.textAlign = 'center';
+      ctx.font = 'bold 9px Inconsolata';
+      ctx.fillText((p * 100).toFixed(0) + '%', x + bw / 2, y + 13);
+    }
+  });
+
+  // Top-P cutoff label count
+  const inCount = [...included].filter(i => i < N).length;
+  document.getElementById('toppLabel').textContent =
+    `top‑p = ${topP.toFixed(2)} → sampling from top ${inCount} token${inCount !== 1 ? 's' : ''}`;
+}
+
+// ── UPDATE ──
+function update() {
+  const temp = parseFloat(document.getElementById('tempSlider').value);
+  const topP = parseFloat(document.getElementById('toppSlider').value);
+
+  document.getElementById('tempVal').textContent = temp.toFixed(2);
+  document.getElementById('toppVal').textContent = topP.toFixed(2);
+  document.getElementById('metaTemp').textContent = `temp: ${temp.toFixed(2)}`;
+  document.getElementById('metaTopp').textContent = `top‑p: ${topP.toFixed(2)}`;
+  document.getElementById('metaMode').textContent = getModeLabel(temp, topP);
+
+  // Update slider gradient
+  const tSlider = document.getElementById('tempSlider');
+  const pSlider = document.getElementById('toppSlider');
+  tSlider.style.background = `linear-gradient(to right, var(--temp-col) 0%, var(--temp-col) ${(temp/2)*100}%, #1a1a22 ${(temp/2)*100}%, #1a1a22 100%)`;
+  pSlider.style.background = `linear-gradient(to right, var(--topp-col) 0%, var(--topp-col) ${topP*100}%, #1a1a22 ${topP*100}%, #1a1a22 100%)`;
+
+  document.getElementById('genText').textContent = getOutputForSettings(temp, topP);
+
+  drawChart(temp, topP);
+
+  // Highlight active preset
+  document.querySelectorAll('.cmp-cell').forEach(cell => {
+    const ct = parseFloat(cell.dataset.temp);
+    const cp = parseFloat(cell.dataset.topp);
+    cell.classList.toggle('active', Math.abs(ct - temp) < 0.05 && Math.abs(cp - topP) < 0.05);
+  });
+}
+
+// Slider events
+document.getElementById('tempSlider').addEventListener('input', update);
+document.getElementById('toppSlider').addEventListener('input', update);
+
+// Preset clicks
+document.querySelectorAll('.cmp-cell').forEach(cell => {
+  cell.addEventListener('click', () => {
+    document.getElementById('tempSlider').value = cell.dataset.temp;
+    document.getElementById('toppSlider').value = cell.dataset.topp;
+    update();
+  });
+});
+
+// Initial render
+update();
+window.addEventListener('resize', () => drawChart(
+  parseFloat(document.getElementById('tempSlider').value),
+  parseFloat(document.getElementById('toppSlider').value)
+));
+</script>
+</body>
+</html>
