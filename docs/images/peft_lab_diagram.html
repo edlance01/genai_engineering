@@ -1,0 +1,673 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>PEFT Lab Architecture Diagram</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600;700&family=Sora:wght@300;400;600;700&display=swap');
+
+  :root {
+    --bg: #0a0e1a;
+    --surface: #111827;
+    --card: #1a2235;
+    --border: #2a3a55;
+    --accent1: #00d4ff;
+    --accent2: #7c3aed;
+    --accent3: #10b981;
+    --accent4: #f59e0b;
+    --accent5: #ef4444;
+    --text: #e2e8f0;
+    --muted: #64748b;
+    --glow1: rgba(0,212,255,0.15);
+    --glow2: rgba(124,58,237,0.15);
+    --glow3: rgba(16,185,129,0.15);
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Sora', sans-serif;
+    min-height: 100vh;
+    padding: 40px 24px;
+    background-image: 
+      radial-gradient(ellipse at 20% 20%, rgba(124,58,237,0.08) 0%, transparent 50%),
+      radial-gradient(ellipse at 80% 80%, rgba(0,212,255,0.06) 0%, transparent 50%);
+  }
+
+  h1 {
+    text-align: center;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: clamp(1.2rem, 2.5vw, 1.8rem);
+    font-weight: 700;
+    letter-spacing: -0.02em;
+    margin-bottom: 8px;
+    background: linear-gradient(135deg, var(--accent1), var(--accent2));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+
+  .subtitle {
+    text-align: center;
+    color: var(--muted);
+    font-size: 0.85rem;
+    margin-bottom: 48px;
+    font-family: 'JetBrains Mono', monospace;
+  }
+
+  /* ====== MAIN FLOW ====== */
+  .flow {
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+    max-width: 1100px;
+    margin: 0 auto;
+  }
+
+  .activity {
+    display: flex;
+    gap: 16px;
+    align-items: stretch;
+    margin-bottom: 0;
+  }
+
+  /* Left label */
+  .act-label {
+    writing-mode: vertical-rl;
+    text-orientation: mixed;
+    transform: rotate(180deg);
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.65rem;
+    font-weight: 600;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    color: var(--muted);
+    width: 28px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    padding: 12px 0;
+  }
+
+  /* Spine */
+  .spine {
+    width: 3px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    flex-shrink: 0;
+    position: relative;
+  }
+  .spine-line {
+    width: 3px;
+    flex: 1;
+    min-height: 20px;
+  }
+  .spine-dot {
+    width: 14px;
+    height: 14px;
+    border-radius: 50%;
+    flex-shrink: 0;
+    border: 2px solid var(--bg);
+    position: relative;
+    z-index: 2;
+  }
+
+  .act-content {
+    flex: 1;
+    padding: 20px 0 20px 0;
+  }
+
+  .act-title {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.75rem;
+    font-weight: 700;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    margin-bottom: 12px;
+  }
+
+  .steps-row {
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+  }
+
+  .step-card {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 14px 16px;
+    flex: 1;
+    min-width: 160px;
+    max-width: 280px;
+    position: relative;
+    transition: transform 0.2s, border-color 0.2s;
+  }
+  .step-card:hover {
+    transform: translateY(-2px);
+  }
+
+  .step-card .icon {
+    font-size: 1.4rem;
+    margin-bottom: 8px;
+    display: block;
+  }
+  .step-card .label {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.7rem;
+    font-weight: 600;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+    margin-bottom: 4px;
+  }
+  .step-card .desc {
+    font-size: 0.78rem;
+    color: var(--muted);
+    line-height: 1.4;
+  }
+
+  .step-card .code-snip {
+    margin-top: 8px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.65rem;
+    color: var(--accent3);
+    background: rgba(16,185,129,0.07);
+    border-radius: 5px;
+    padding: 5px 8px;
+    border-left: 2px solid var(--accent3);
+  }
+
+  /* Connector arrows between activities */
+  .connector {
+    display: flex;
+    align-items: center;
+    padding-left: 46px;
+    height: 32px;
+  }
+  .connector-line {
+    width: 3px;
+    height: 100%;
+  }
+
+  /* Color themes per activity */
+  .a1 { --act-color: #00d4ff; --act-glow: rgba(0,212,255,0.12); }
+  .a2 { --act-color: #7c3aed; --act-glow: rgba(124,58,237,0.12); }
+  .a3 { --act-color: #10b981; --act-glow: rgba(16,185,129,0.12); }
+  .a4 { --act-color: #f59e0b; --act-glow: rgba(245,158,11,0.12); }
+  .a5 { --act-color: #ef4444; --act-glow: rgba(239,68,68,0.12); }
+
+  .activity .spine-dot { background: var(--act-color); box-shadow: 0 0 8px var(--act-color); }
+  .activity .spine-line { background: linear-gradient(to bottom, var(--act-color), transparent); }
+  .activity .act-title { color: var(--act-color); }
+  .activity .step-card { border-color: color-mix(in srgb, var(--act-color) 25%, var(--border)); background: color-mix(in srgb, var(--act-color) 5%, var(--card)); }
+  .activity .step-card:hover { border-color: var(--act-color); box-shadow: 0 0 16px var(--act-glow); }
+  .activity .act-label { color: var(--act-color); opacity: 0.6; }
+
+  .connector .connector-line {
+    background: linear-gradient(to bottom, var(--from-color, #00d4ff), var(--to-color, #7c3aed));
+  }
+
+  /* ====== LORA DETAIL PANEL ====== */
+  .lora-panel {
+    max-width: 1100px;
+    margin: 40px auto 0;
+    background: var(--card);
+    border: 1px solid color-mix(in srgb, #f59e0b 30%, var(--border));
+    border-radius: 14px;
+    padding: 24px 28px;
+    position: relative;
+    overflow: hidden;
+  }
+  .lora-panel::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0; bottom: 0;
+    background: radial-gradient(ellipse at 50% 0%, rgba(245,158,11,0.07), transparent 60%);
+    pointer-events: none;
+  }
+  .lora-panel h2 {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.8rem;
+    font-weight: 700;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: #f59e0b;
+    margin-bottom: 20px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .lora-grid {
+    display: grid;
+    grid-template-columns: 1fr 1px 1fr 1px 1fr;
+    gap: 0;
+    align-items: start;
+  }
+  .lora-col {
+    padding: 0 20px;
+  }
+  .lora-col:first-child { padding-left: 0; }
+  .lora-col:last-child { padding-right: 0; }
+  .lora-divider {
+    background: var(--border);
+    height: 100%;
+    min-height: 80px;
+  }
+  .lora-col h3 {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.68rem;
+    font-weight: 600;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin-bottom: 10px;
+  }
+  .lora-param {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 5px 0;
+    border-bottom: 1px dashed rgba(255,255,255,0.05);
+    font-size: 0.78rem;
+  }
+  .lora-param .name { color: var(--muted); }
+  .lora-param .val {
+    font-family: 'JetBrains Mono', monospace;
+    font-weight: 600;
+    color: #f59e0b;
+    font-size: 0.75rem;
+  }
+  .frozen-badge {
+    display: inline-block;
+    background: rgba(100,116,139,0.15);
+    border: 1px solid #475569;
+    color: var(--muted);
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.6rem;
+    padding: 2px 6px;
+    border-radius: 4px;
+    margin-top: 4px;
+  }
+  .trainable-badge {
+    display: inline-block;
+    background: rgba(245,158,11,0.12);
+    border: 1px solid #f59e0b;
+    color: #f59e0b;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.6rem;
+    padding: 2px 6px;
+    border-radius: 4px;
+    margin-top: 4px;
+  }
+
+  /* ====== COMPARISON PANEL ====== */
+  .compare-panel {
+    max-width: 1100px;
+    margin: 24px auto 0;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+  }
+  .compare-card {
+    background: var(--card);
+    border-radius: 14px;
+    padding: 20px 24px;
+    border: 1px solid var(--border);
+  }
+  .compare-card.baseline { border-color: color-mix(in srgb, #64748b 40%, var(--border)); }
+  .compare-card.peft { border-color: color-mix(in srgb, #10b981 30%, var(--border)); }
+  .compare-card h2 {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.72rem;
+    font-weight: 700;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    margin-bottom: 14px;
+  }
+  .compare-card.baseline h2 { color: var(--muted); }
+  .compare-card.peft h2 { color: var(--accent3); }
+
+  .compare-item {
+    display: flex;
+    align-items: flex-start;
+    gap: 8px;
+    margin-bottom: 8px;
+    font-size: 0.78rem;
+    line-height: 1.4;
+  }
+  .compare-item .dot {
+    width: 6px; height: 6px;
+    border-radius: 50%;
+    flex-shrink: 0;
+    margin-top: 5px;
+  }
+  .baseline .dot { background: var(--muted); }
+  .peft .dot { background: var(--accent3); }
+
+  /* arrows between steps in a row */
+  .arrow-sep {
+    display: flex;
+    align-items: center;
+    color: var(--muted);
+    font-size: 1rem;
+    flex-shrink: 0;
+    align-self: center;
+  }
+
+  @media (max-width: 700px) {
+    .steps-row { flex-direction: column; }
+    .compare-panel { grid-template-columns: 1fr; }
+    .lora-grid { grid-template-columns: 1fr; }
+    .lora-divider { display: none; }
+    .step-card { max-width: 100%; }
+  }
+</style>
+</head>
+<body>
+
+<h1>Parameter-Efficient Fine-Tuning Lab</h1>
+<p class="subtitle">// BERT × LoRA × Sentiment Classification — Architecture & Flow</p>
+
+<div class="flow">
+
+  <!-- ACTIVITY 1 -->
+  <div class="activity a1">
+    <div class="act-label">Activity 1</div>
+    <div class="spine">
+      <div class="spine-dot"></div>
+      <div class="spine-line"></div>
+    </div>
+    <div class="act-content">
+      <div class="act-title">① Load & Prepare Dataset</div>
+      <div class="steps-row">
+        <div class="step-card">
+          <span class="icon">📂</span>
+          <div class="label">Load CSV</div>
+          <div class="desc">Read train.csv into a Pandas DataFrame via pd.read_csv()</div>
+          <div class="code-snip">df = pd.read_csv("train.csv")</div>
+        </div>
+        <div class="arrow-sep">→</div>
+        <div class="step-card">
+          <span class="icon">🔤</span>
+          <div class="label">Normalize & Encode</div>
+          <div class="desc">Lowercase text, map labels: negative→0, neutral→1, positive→2</div>
+          <div class="code-snip">label_map = {"negative":0, ...}</div>
+        </div>
+        <div class="arrow-sep">→</div>
+        <div class="step-card">
+          <span class="icon">🗂️</span>
+          <div class="label">HF Dataset + Split</div>
+          <div class="desc">Convert to Hugging Face Dataset, split 80/20 train/test (255 / 57 samples)</div>
+          <div class="code-snip">Dataset.from_pandas(df)<br>train_test_split(0.2)</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- connector -->
+  <div class="connector">
+    <div class="connector-line" style="--from-color:#00d4ff;--to-color:#7c3aed;"></div>
+  </div>
+
+  <!-- ACTIVITY 2 -->
+  <div class="activity a2">
+    <div class="act-label">Activity 2</div>
+    <div class="spine">
+      <div class="spine-dot"></div>
+      <div class="spine-line"></div>
+    </div>
+    <div class="act-content">
+      <div class="act-title">② Tokenize Dataset</div>
+      <div class="steps-row">
+        <div class="step-card">
+          <span class="icon">🔡</span>
+          <div class="label">Load Tokenizer</div>
+          <div class="desc">Load AutoTokenizer for distilbert-base-uncased pretrained checkpoint</div>
+          <div class="code-snip">AutoTokenizer.from_pretrained(...)</div>
+        </div>
+        <div class="arrow-sep">→</div>
+        <div class="step-card">
+          <span class="icon">✂️</span>
+          <div class="label">Tokenize & Pad</div>
+          <div class="desc">Truncation + padding to max_length=128 for uniform batch inputs</div>
+          <div class="code-snip">truncation=True<br>padding="max_length"<br>max_length=128</div>
+        </div>
+        <div class="arrow-sep">→</div>
+        <div class="step-card">
+          <span class="icon">🔢</span>
+          <div class="label">Format Tensors</div>
+          <div class="desc">Remove raw text column, set PyTorch format: input_ids, attention_mask, label</div>
+          <div class="code-snip">set_format(type="torch")</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- connector -->
+  <div class="connector">
+    <div class="connector-line" style="--from-color:#7c3aed;--to-color:#10b981;"></div>
+  </div>
+
+  <!-- ACTIVITY 3 -->
+  <div class="activity a3">
+    <div class="act-label">Activity 3</div>
+    <div class="spine">
+      <div class="spine-dot"></div>
+      <div class="spine-line"></div>
+    </div>
+    <div class="act-content">
+      <div class="act-title">③ Define Baseline Model</div>
+      <div class="steps-row">
+        <div class="step-card">
+          <span class="icon">🤖</span>
+          <div class="label">Load DistilBERT</div>
+          <div class="desc">AutoModelForSequenceClassification with num_labels=3, label mappings</div>
+          <div class="code-snip">ignore_mismatched_sizes=True</div>
+        </div>
+        <div class="arrow-sep">→</div>
+        <div class="step-card">
+          <span class="icon">🔍</span>
+          <div class="label">Predict Function</div>
+          <div class="desc">Tokenize → forward pass → softmax → argmax → label lookup</div>
+          <div class="code-snip">torch.no_grad()<br>outputs.logits<br>torch.argmax(...)</div>
+        </div>
+        <div class="arrow-sep">→</div>
+        <div class="step-card">
+          <span class="icon">📋</span>
+          <div class="label">Baseline Predictions</div>
+          <div class="desc">Run 3 test sentences through baseline — typically biased / poor outputs</div>
+          <div class="code-snip">baseline_model.eval()<br>get_prediction(...)</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- connector -->
+  <div class="connector">
+    <div class="connector-line" style="--from-color:#10b981;--to-color:#f59e0b;"></div>
+  </div>
+
+  <!-- ACTIVITY 4 -->
+  <div class="activity a4">
+    <div class="act-label">Activity 4</div>
+    <div class="spine">
+      <div class="spine-dot"></div>
+      <div class="spine-line"></div>
+    </div>
+    <div class="act-content">
+      <div class="act-title">④ Configure PEFT / LoRA</div>
+      <div class="steps-row">
+        <div class="step-card">
+          <span class="icon">❄️</span>
+          <div class="label">Fresh Model Load</div>
+          <div class="desc">Load another instance of DistilBERT — base will be frozen</div>
+          <div class="code-snip">peft_model = AutoModel<br>ForSequenceClassification(...)</div>
+        </div>
+        <div class="arrow-sep">→</div>
+        <div class="step-card">
+          <span class="icon">⚙️</span>
+          <div class="label">LoRA Config</div>
+          <div class="desc">r=4, alpha=16, dropout=0.1, targets: q_lin & v_lin attention layers</div>
+          <div class="code-snip">LoraConfig(r=4,<br>  lora_alpha=16,<br>  target_modules=<br>  ["q_lin","v_lin"])</div>
+        </div>
+        <div class="arrow-sep">→</div>
+        <div class="step-card">
+          <span class="icon">🎯</span>
+          <div class="label">Apply PEFT</div>
+          <div class="desc">Inject LoRA adapters; &lt;1% parameters trainable — rest frozen</div>
+          <div class="code-snip">get_peft_model(model,<br>  peft_config)<br>.print_trainable_parameters()</div>
+        </div>
+        <div class="arrow-sep">→</div>
+        <div class="step-card">
+          <span class="icon">🏋️</span>
+          <div class="label">Training Args</div>
+          <div class="desc">3 epochs, batch=16, lr=2e-4, eval per epoch, output to ./peft_output</div>
+          <div class="code-snip">TrainingArguments(<br>  num_train_epochs=3,<br>  learning_rate=2e-4)</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- connector -->
+  <div class="connector">
+    <div class="connector-line" style="--from-color:#f59e0b;--to-color:#ef4444;"></div>
+  </div>
+
+  <!-- ACTIVITY 5 -->
+  <div class="activity a5">
+    <div class="act-label">Activity 5</div>
+    <div class="spine">
+      <div class="spine-dot"></div>
+    </div>
+    <div class="act-content">
+      <div class="act-title">⑤ Train & Evaluate</div>
+      <div class="steps-row">
+        <div class="step-card">
+          <span class="icon">🚀</span>
+          <div class="label">Initialize Trainer</div>
+          <div class="desc">Hugging Face Trainer with peft_model, train/eval datasets, tokenizer</div>
+          <div class="code-snip">Trainer(model=peft_model,<br>  train_dataset=...,<br>  eval_dataset=...)</div>
+        </div>
+        <div class="arrow-sep">→</div>
+        <div class="step-card">
+          <span class="icon">📉</span>
+          <div class="label">Train (2–3 min)</div>
+          <div class="desc">Training loss decreases over 3 epochs; stable validation loss</div>
+          <div class="code-snip">trainer.train()</div>
+        </div>
+        <div class="arrow-sep">→</div>
+        <div class="step-card">
+          <span class="icon">📊</span>
+          <div class="label">Compare Outputs</div>
+          <div class="desc">Side-by-side baseline vs PEFT predictions on 3 unseen test sentences</div>
+          <div class="code-snip">pd.DataFrame(<br>  comparison_results)</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div><!-- /flow -->
+
+<!-- LORA DETAIL PANEL -->
+<div class="lora-panel">
+  <h2>⚡ LoRA Architecture Detail</h2>
+  <div class="lora-grid">
+
+    <div class="lora-col">
+      <h3>DistilBERT Base (Frozen)</h3>
+      <div class="lora-param"><span class="name">Architecture</span><span class="val">6 × Transformer Blocks</span></div>
+      <div class="lora-param"><span class="name">Attention heads</span><span class="val">12</span></div>
+      <div class="lora-param"><span class="name">Hidden size</span><span class="val">768</span></div>
+      <div class="lora-param"><span class="name">Vocab size</span><span class="val">30,522</span></div>
+      <div style="margin-top:10px">
+        <span class="frozen-badge">🔒 FROZEN — no gradient updates</span>
+      </div>
+    </div>
+
+    <div class="lora-divider"></div>
+
+    <div class="lora-col">
+      <h3>LoRA Adapter Layers</h3>
+      <div class="lora-param"><span class="name">Target modules</span><span class="val">q_lin, v_lin</span></div>
+      <div class="lora-param"><span class="name">Rank (r)</span><span class="val">4</span></div>
+      <div class="lora-param"><span class="name">Alpha (scaling)</span><span class="val">16</span></div>
+      <div class="lora-param"><span class="name">Dropout</span><span class="val">0.1</span></div>
+      <div class="lora-param"><span class="name">Matrices per layer</span><span class="val">A (W×r) + B (r×W)</span></div>
+      <div style="margin-top:10px">
+        <span class="trainable-badge">✅ TRAINABLE — adapter only</span>
+      </div>
+    </div>
+
+    <div class="lora-divider"></div>
+
+    <div class="lora-col">
+      <h3>Classification Head</h3>
+      <div class="lora-param"><span class="name">Input</span><span class="val">768 (hidden_size)</span></div>
+      <div class="lora-param"><span class="name">Output classes</span><span class="val">3</span></div>
+      <div class="lora-param"><span class="name">Labels</span><span class="val">negative / neutral / positive</span></div>
+      <div class="lora-param"><span class="name">Trainable params</span><span class="val">&lt;1% of total</span></div>
+      <div style="margin-top:10px">
+        <span class="trainable-badge">✅ TRAINABLE — new head</span>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- COMPARE PANEL -->
+<div class="compare-panel">
+  <div class="compare-card baseline">
+    <h2>Baseline Pretrained Model</h2>
+    <div class="compare-item">
+      <div class="dot"></div>
+      <span>No task-specific adaptation — uses pretrained weights as-is</span>
+    </div>
+    <div class="compare-item">
+      <div class="dot"></div>
+      <span>Predicts sentiment without sentiment-domain knowledge</span>
+    </div>
+    <div class="compare-item">
+      <div class="dot"></div>
+      <span>Frequently biased toward a single class (poor calibration)</span>
+    </div>
+    <div class="compare-item">
+      <div class="dot"></div>
+      <span>Serves as the reference point for measuring PEFT improvement</span>
+    </div>
+    <div class="compare-item">
+      <div class="dot"></div>
+      <span>All ~66M parameters loaded but none fine-tuned</span>
+    </div>
+  </div>
+  <div class="compare-card peft">
+    <h2>PEFT-Tuned LoRA Model</h2>
+    <div class="compare-item">
+      <div class="dot"></div>
+      <span>LoRA adapters injected into query & value attention projections</span>
+    </div>
+    <div class="compare-item">
+      <div class="dot"></div>
+      <span>Only &lt;1% of parameters trained — massive efficiency gain</span>
+    </div>
+    <div class="compare-item">
+      <div class="dot"></div>
+      <span>Base model frozen → avoids catastrophic forgetting</span>
+    </div>
+    <div class="compare-item">
+      <div class="dot"></div>
+      <span>3 epochs, lr=2e-4, batch=16 — trains in ~2–3 minutes</span>
+    </div>
+    <div class="compare-item">
+      <div class="dot"></div>
+      <span>Meaningful improvement in sentiment correctness on test sentences</span>
+    </div>
+  </div>
+</div>
+
+</body>
+</html>
