@@ -1,9 +1,5 @@
 # genai_engineering
 
-> [!NOTE]
-> The original repo/project name is **`genai_engineering`**. This working copy is checked out in a
-> directory named `dp-genai-engineering` to match local naming preferences.
-
 Notebook-first GenAI engineering sandbox covering:
 
 - GenAI fundamentals (temperature/top-p, limits/penalties, embeddings, streaming)
