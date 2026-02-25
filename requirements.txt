@@ -8,3 +8,5 @@ langchain-community
 langchain-core
 langgraph
 Anthropic
+pandas
+deepeval
