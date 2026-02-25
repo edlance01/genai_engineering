@@ -1,0 +1,38 @@
+[project]
+name = "dp-genai-engineering"
+version = "0.1.0"
+description = "Notebook-first GenAI engineering sandbox (LangChain/LCEL, tools, evaluation)."
+readme = "README.md"
+requires-python = ">=3.12"
+dependencies = [
+  "anthropic",
+  "deepeval",
+  "ipykernel",
+  "jupyter",
+  "langchain",
+  "langchain-community",
+  "langchain-core",
+  "langchain-openai",
+  "langgraph",
+  "openai>=2.21.0",
+  "pandas",
+  "python-dotenv>=1.0.1",
+]
+
+[dependency-groups]
+dev = [
+  "black",
+  "ruff",
+]
+
+[tool.black]
+line-length = 88
+
+[tool.ruff]
+line-length = 88
+target-version = "py312"
+extend-exclude = ["*.ipynb"]
+
+[tool.ruff.lint]
+select = ["E", "F", "I"]
+
