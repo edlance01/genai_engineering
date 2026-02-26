@@ -10,3 +10,4 @@ langgraph
 Anthropic
 pandas
 deepeval
+nltk
