@@ -11,3 +11,4 @@ Anthropic
 pandas
 deepeval
 nltk
+pyspellchecker

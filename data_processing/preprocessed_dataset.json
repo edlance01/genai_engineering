@@ -1,0 +1,141 @@
+{
+  "vocab": {
+    "[PAD]": 0,
+    "[UNK]": 1,
+    "[CLS]": 2,
+    "[SEP]": 3,
+    "[MASK]": 4,
+    "the": 5,
+    "of": 6,
+    "data": 7,
+    "is": 8,
+    "large": 9,
+    "language": 10,
+    "models": 11,
+    "text": 12,
+    "ai": 13,
+    "learning": 14,
+    "for": 15,
+    "time": 16,
+    "quick": 17,
+    "brown": 18,
+    "fox": 19,
+    "jumped": 20,
+    "over": 21,
+    "lazy": 22,
+    "dog": 23,
+    "learn": 24,
+    "from": 25,
+    "massive": 26,
+    "volumes": 27,
+    "neural": 28,
+    "networks": 29,
+    "are": 30,
+    "backbone": 31,
+    "modern": 32,
+    "transformers": 33,
+    "changed": 34,
+    "natural": 35,
+    "processing": 36,
+    "forever": 37,
+    "deep": 38,
+    "require": 39,
+    "datasets": 40,
+    "training": 41,
+    "do": 42,
+    "not": 43,
+    "underestimate": 44,
+    "importance": 45,
+    "quality": 46,
+    "it": 47,
+    "a": 48,
+    "great": 49,
+    "to": 50,
+    "be": 51,
+    "working": 52,
+    "in": 53,
+    "machine": 54,
+    "preparation": 55,
+    "often": 56,
+    "most": 57,
+    "consuming": 58,
+    "step": 59,
+    "tokenization": 60,
+    "converts": 61,
+    "into": 62,
+    "numerical": 63,
+    "representations": 64,
+    "bias": 65,
+    "removal": 66,
+    "essential": 67,
+    "responsible": 68,
+    "systems": 69
+  },
+  "label_map": {
+    "data_quality": 0,
+    "deep_learning": 1,
+    "ethics": 2,
+    "general": 3,
+    "llm": 4,
+    "neural_nets": 5,
+    "tokenization": 6
+  },
+  "splits": {
+    "train": [
+      {
+        "text": "do not underestimate the importance of data quality",
+        "label": "data_quality",
+        "label_id": 0
+      },
+      {
+        "text": "it is a great time to be working in machine learning",
+        "label": "general",
+        "label_id": 3
+      },
+      {
+        "text": "data preparation is often the most time consuming step",
+        "label": "data_quality",
+        "label_id": 0
+      },
+      {
+        "text": "bias removal is essential for responsible ai systems",
+        "label": "ethics",
+        "label_id": 2
+      },
+      {
+        "text": "neural networks are the backbone of modern ai",
+        "label": "neural_nets",
+        "label_id": 5
+      },
+      {
+        "text": "transformers changed natural language processing forever",
+        "label": "llm",
+        "label_id": 4
+      }
+    ],
+    "val": [
+      {
+        "text": "the quick brown fox jumped over the lazy dog",
+        "label": "general",
+        "label_id": 3
+      },
+      {
+        "text": "deep learning models require large datasets for training",
+        "label": "deep_learning",
+        "label_id": 1
+      }
+    ],
+    "test": [
+      {
+        "text": "tokenization converts text into numerical representations",
+        "label": "tokenization",
+        "label_id": 6
+      },
+      {
+        "text": "large language models learn from massive volumes of text data",
+        "label": "llm",
+        "label_id": 4
+      }
+    ]
+  }
+}

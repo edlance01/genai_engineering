@@ -1,0 +1,674 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>PEFT & Transfer Learning Pipeline</title>
+<link href="https://fonts.googleapis.com/css2?family=Space+Mono:ital,wght@0,400;0,700;1,400&family=Fraunces:ital,wght@0,300;0,600;0,900;1,300&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg:        #f5f2eb;
+    --ink:       #1a1612;
+    --muted:     #7a7268;
+    --border:    #d8d2c8;
+    --card:      #ffffff;
+    --shadow:    rgba(26,22,18,0.08);
+
+    --peft:      #1d3557;   /* deep navy   — PEFT track */
+    --peft-l:    #e8eef5;
+    --tl:        #6b3a2a;   /* burnt sienna — Transfer Learning track */
+    --tl-l:      #f5ecea;
+    --shared:    #2d6a4f;   /* forest green — shared / applications */
+    --shared-l:  #e8f4ed;
+    --accent:    #e76f51;   /* coral accent */
+    --gold:      #c9a84c;
+  }
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background: var(--bg);
+    color: var(--ink);
+    font-family: 'DM Sans', sans-serif;
+    padding: 56px 28px 96px;
+    line-height: 1.6;
+  }
+
+  /* ── Header ── */
+  header { text-align: center; margin-bottom: 72px; }
+  .eyebrow {
+    font-family: 'Space Mono', monospace;
+    font-size: 10px;
+    letter-spacing: .22em;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin-bottom: 16px;
+  }
+  h1 {
+    font-family: 'Fraunces', serif;
+    font-size: clamp(32px, 5vw, 58px);
+    font-weight: 900;
+    line-height: 1.05;
+    color: var(--ink);
+  }
+  h1 em { color: var(--accent); font-style: italic; }
+  .subtitle {
+    margin-top: 16px;
+    color: var(--muted);
+    font-size: 15px;
+    max-width: 600px;
+    margin-inline: auto;
+    font-weight: 300;
+  }
+
+  /* ── Legend chips ── */
+  .legend {
+    display: flex;
+    justify-content: center;
+    gap: 20px;
+    flex-wrap: wrap;
+    margin-bottom: 56px;
+  }
+  .leg {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-family: 'Space Mono', monospace;
+    font-size: 10px;
+    letter-spacing: .1em;
+    color: var(--muted);
+    text-transform: uppercase;
+  }
+  .leg-swatch {
+    width: 28px; height: 6px;
+    border-radius: 3px;
+  }
+
+  /* ── Pipeline wrapper ── */
+  .pipeline {
+    max-width: 1240px;
+    margin: 0 auto;
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+  }
+
+  /* ── Phase header ── */
+  .phase-hd {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    margin-bottom: 16px;
+  }
+  .phase-tag {
+    font-family: 'Space Mono', monospace;
+    font-size: 9px;
+    letter-spacing: .15em;
+    text-transform: uppercase;
+    padding: 4px 12px;
+    border-radius: 20px;
+    white-space: nowrap;
+    flex-shrink: 0;
+  }
+  .phase-rule { flex: 1; height: 1px; background: var(--border); }
+
+  /* ── Flow arrow connector ── */
+  .connector {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    height: 52px;
+    position: relative;
+  }
+  .connector::before {
+    content: '';
+    position: absolute;
+    top: 0; bottom: 0;
+    width: 1px;
+    background: linear-gradient(to bottom, var(--border), var(--ink) 55%, var(--border));
+    left: 50%;
+  }
+  .connector-arrow {
+    width: 0; height: 0;
+    border-left: 6px solid transparent;
+    border-right: 6px solid transparent;
+    border-top: 9px solid var(--ink);
+    position: absolute;
+    bottom: 6px;
+  }
+
+  /* ── Base card ── */
+  .card {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 22px 24px 20px;
+    box-shadow: 0 2px 12px var(--shadow);
+    position: relative;
+    transition: box-shadow .2s, transform .2s;
+  }
+  .card:hover {
+    box-shadow: 0 8px 28px var(--shadow);
+    transform: translateY(-2px);
+  }
+  .card-stripe {
+    position: absolute;
+    top: 0; left: 0;
+    width: 5px;
+    bottom: 0;
+    border-radius: 14px 0 0 14px;
+  }
+  .card-icon { font-size: 24px; margin-bottom: 10px; display: block; }
+  .card-title {
+    font-family: 'Fraunces', serif;
+    font-size: 15px;
+    font-weight: 600;
+    margin-bottom: 6px;
+    line-height: 1.2;
+  }
+  .card-body {
+    font-size: 12px;
+    color: var(--muted);
+    line-height: 1.65;
+  }
+  .tags {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 5px;
+    margin-top: 11px;
+  }
+  .tag {
+    font-family: 'Space Mono', monospace;
+    font-size: 9px;
+    padding: 3px 8px;
+    border-radius: 20px;
+    border: 1px solid var(--border);
+    color: var(--muted);
+    letter-spacing: .05em;
+  }
+
+  /* ── Wide intro card ── */
+  .intro-card {
+    background: var(--ink);
+    color: #f5f2eb;
+    border-radius: 16px;
+    padding: 32px 36px;
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 32px;
+    position: relative;
+    overflow: hidden;
+    margin-bottom: 0;
+  }
+  .intro-card::before {
+    content: '';
+    position: absolute;
+    width: 400px; height: 400px;
+    border-radius: 50%;
+    background: radial-gradient(circle, rgba(231,111,81,0.15), transparent 70%);
+    top: -100px; right: -100px;
+    pointer-events: none;
+  }
+  .intro-col-title {
+    font-family: 'Space Mono', monospace;
+    font-size: 9px;
+    letter-spacing: .18em;
+    text-transform: uppercase;
+    color: rgba(245,242,235,0.4);
+    margin-bottom: 10px;
+  }
+  .intro-col-body {
+    font-size: 13px;
+    color: rgba(245,242,235,0.85);
+    line-height: 1.7;
+    font-weight: 300;
+  }
+  .intro-col-body strong {
+    color: #f5f2eb;
+    font-weight: 500;
+  }
+
+  /* ── Row layouts ── */
+  .row { display: flex; gap: 14px; align-items: stretch; }
+  .row .card { flex: 1; }
+
+  /* ── H-arrow between siblings ── */
+  .h-arr {
+    display: flex;
+    align-items: center;
+    flex-shrink: 0;
+    width: 28px;
+  }
+  .h-arr-inner {
+    width: 100%;
+    height: 1px;
+    background: var(--border);
+    position: relative;
+  }
+  .h-arr-inner::after {
+    content: '';
+    position: absolute;
+    right: -4px; top: 50%;
+    width: 7px; height: 7px;
+    border-right: 1px solid var(--muted);
+    border-top: 1px solid var(--muted);
+    transform: translateY(-50%) rotate(45deg);
+  }
+
+  /* ── Split fork ── */
+  .fork {
+    display: flex;
+    gap: 0;
+    align-items: flex-start;
+    position: relative;
+    margin-bottom: 0;
+  }
+  .fork-track {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+  }
+  .fork-divider {
+    width: 1px;
+    background: var(--border);
+    margin: 0 22px;
+    align-self: stretch;
+    position: relative;
+  }
+  .fork-divider::before {
+    content: 'VS';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    font-family: 'Space Mono', monospace;
+    font-size: 9px;
+    letter-spacing: .1em;
+    color: var(--muted);
+    background: var(--bg);
+    padding: 4px 6px;
+    border: 1px solid var(--border);
+    border-radius: 4px;
+  }
+  .track-label {
+    font-family: 'Fraunces', serif;
+    font-size: 17px;
+    font-weight: 600;
+    padding: 10px 16px;
+    border-radius: 10px;
+    margin-bottom: 2px;
+    text-align: center;
+  }
+
+  /* ── Sub-technique grid ── */
+  .tech-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+  }
+
+  /* ── Comparison table ── */
+  .compare-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 13px;
+  }
+  .compare-table th {
+    font-family: 'Space Mono', monospace;
+    font-size: 9px;
+    letter-spacing: .12em;
+    text-transform: uppercase;
+    padding: 10px 14px;
+    text-align: left;
+    border-bottom: 2px solid var(--border);
+    color: var(--muted);
+  }
+  .compare-table td {
+    padding: 10px 14px;
+    border-bottom: 1px solid var(--border);
+    vertical-align: top;
+    line-height: 1.5;
+  }
+  .compare-table tr:last-child td { border-bottom: none; }
+  .compare-table tr:hover td { background: var(--bg); }
+  .badge {
+    display: inline-block;
+    font-family: 'Space Mono', monospace;
+    font-size: 9px;
+    padding: 2px 8px;
+    border-radius: 20px;
+    letter-spacing: .05em;
+  }
+
+  /* ── Applications strip ── */
+  .apps-strip {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 14px;
+  }
+  .app-card {
+    background: var(--shared-l);
+    border: 1px solid rgba(45,106,79,0.2);
+    border-radius: 12px;
+    padding: 20px 18px;
+    text-align: center;
+  }
+  .app-icon { font-size: 28px; margin-bottom: 10px; display: block; }
+  .app-title { font-family: 'Fraunces', serif; font-size: 14px; font-weight: 600; color: var(--shared); margin-bottom: 5px; }
+  .app-desc { font-size: 11px; color: var(--muted); line-height: 1.55; }
+
+  /* ── Takeaway strip ── */
+  .takeaway-strip {
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+    gap: 12px;
+  }
+  .tk {
+    background: var(--ink);
+    border-radius: 12px;
+    padding: 20px 16px;
+    text-align: center;
+    color: rgba(245,242,235,0.85);
+    font-size: 12px;
+    line-height: 1.55;
+    font-weight: 300;
+  }
+  .tk-num {
+    font-family: 'Fraunces', serif;
+    font-size: 28px;
+    font-weight: 900;
+    color: var(--accent);
+    display: block;
+    margin-bottom: 8px;
+    line-height: 1;
+  }
+
+  @media (max-width: 900px) {
+    .intro-card { grid-template-columns: 1fr; }
+    .fork { flex-direction: column; }
+    .fork-divider { display: none; }
+    .tech-grid { grid-template-columns: 1fr; }
+    .takeaway-strip { grid-template-columns: 1fr 1fr; }
+    .apps-strip { grid-template-columns: 1fr; }
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="eyebrow">Architecture Overview</div>
+  <h1>Parameter-Efficient Fine-Tuning<br>&amp; <em>Transfer Learning</em></h1>
+  <p class="subtitle">How large pre-trained models are adapted efficiently to new tasks — without retraining everything from scratch.</p>
+</header>
+
+<div class="legend">
+  <div class="leg"><span class="leg-swatch" style="background:var(--peft);"></span>PEFT Track</div>
+  <div class="leg"><span class="leg-swatch" style="background:var(--tl);"></span>Transfer Learning Track</div>
+  <div class="leg"><span class="leg-swatch" style="background:var(--shared);"></span>Shared / Applications</div>
+</div>
+
+<div class="pipeline">
+
+  <!-- ══ FOUNDATION ══ -->
+  <div>
+    <div class="phase-hd">
+      <span class="phase-tag" style="background:rgba(26,22,18,0.07);color:var(--muted);">Foundation</span>
+      <div class="phase-rule"></div>
+    </div>
+    <div class="intro-card">
+      <div>
+        <div class="intro-col-title">The Problem</div>
+        <div class="intro-col-body">Training LLMs from scratch demands <strong>enormous compute, memory, and data</strong>. Full fine-tuning updates all parameters and remains expensive even when a good base model already exists.</div>
+      </div>
+      <div>
+        <div class="intro-col-title">Model Fine-Tuning</div>
+        <div class="intro-col-body">Adapts a pre-trained model to a specific task by updating <strong>selected parameters</strong>. Reuses existing knowledge instead of starting over — achieving higher accuracy with far less data.</div>
+      </div>
+      <div>
+        <div class="intro-col-title">Two Complementary Strategies</div>
+        <div class="intro-col-body"><strong>PEFT</strong> — update only a tiny subset of parameters, keep the rest frozen.<br><br><strong>Transfer Learning</strong> — reuse knowledge learned on one task for a different (but related) task.</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="connector"><div class="connector-arrow"></div></div>
+
+  <!-- ══ DUAL TRACKS ══ -->
+  <div>
+    <div class="phase-hd">
+      <span class="phase-tag" style="background:var(--peft-l);color:var(--peft);">PEFT Track</span>
+      <div class="phase-rule"></div>
+      <span class="phase-tag" style="background:var(--tl-l);color:var(--tl);">Transfer Learning Track</span>
+    </div>
+
+    <div class="fork">
+
+      <!-- LEFT: PEFT -->
+      <div class="fork-track">
+        <div class="track-label" style="background:var(--peft-l);color:var(--peft);">Parameter-Efficient Fine-Tuning (PEFT)</div>
+
+        <!-- Why PEFT -->
+        <div class="card" style="padding-left:28px;">
+          <div class="card-stripe" style="background:var(--peft);"></div>
+          <span class="card-icon">⚡</span>
+          <div class="card-title" style="color:var(--peft);">Why PEFT?</div>
+          <div class="card-body">Full fine-tuning updates every parameter — prohibitively expensive for billion-parameter models. PEFT keeps <strong>main weights frozen</strong> and trains only a small adapter set, reducing memory and compute dramatically while achieving near-equal performance.</div>
+          <div class="tags">
+            <span class="tag">frozen base</span>
+            <span class="tag">low memory</span>
+            <span class="tag">fast training</span>
+            <span class="tag">less overfitting</span>
+          </div>
+        </div>
+
+        <!-- 4 PEFT Techniques -->
+        <div class="tech-grid">
+
+          <div class="card" style="padding-left:28px;">
+            <div class="card-stripe" style="background:var(--peft);"></div>
+            <span class="card-icon">🔌</span>
+            <div class="card-title" style="color:var(--peft);">Adapter-Based Tuning</div>
+            <div class="card-body">Inserts small neural adapter modules between existing layers. Only adapters are trained. Original weights stay frozen. Easy to swap between tasks — just swap adapters.</div>
+            <div class="tags"><span class="tag">plug-in modules</span><span class="tag">task-swap</span></div>
+          </div>
+
+          <div class="card" style="padding-left:28px;">
+            <div class="card-stripe" style="background:var(--peft);"></div>
+            <span class="card-icon">📐</span>
+            <div class="card-title" style="color:var(--peft);">LoRA (Low-Rank Adaptation)</div>
+            <div class="card-body">Injects low-rank decomposed matrices (A × B) into attention layers. Drastically reduces trainable parameters. Performance nearly matches full fine-tuning. The go-to for LLM fine-tuning today.</div>
+            <div class="tags"><span class="tag">low-rank matrices</span><span class="tag">attention layers</span><span class="tag">industry standard</span></div>
+          </div>
+
+          <div class="card" style="padding-left:28px;">
+            <div class="card-stripe" style="background:var(--peft);"></div>
+            <span class="card-icon">💬</span>
+            <div class="card-title" style="color:var(--peft);">Prompt Tuning</div>
+            <div class="card-body">Learns soft prompt embeddings prepended to the input. The model itself stays fully frozen — only the prompt vectors are trained. Extremely lightweight; best for quick task adaptation.</div>
+            <div class="tags"><span class="tag">soft prompts</span><span class="tag">frozen model</span><span class="tag">minimal params</span></div>
+          </div>
+
+          <div class="card" style="padding-left:28px;">
+            <div class="card-stripe" style="background:var(--peft);"></div>
+            <span class="card-icon">🎯</span>
+            <div class="card-title" style="color:var(--peft);">Prefix Tuning</div>
+            <div class="card-body">Prepends trainable vectors to every transformer layer (not just input). These prefixes steer model behavior during inference without touching base weights. Effective for text generation tasks.</div>
+            <div class="tags"><span class="tag">per-layer prefixes</span><span class="tag">generation</span><span class="tag">low memory</span></div>
+          </div>
+
+        </div>
+      </div>
+
+      <!-- DIVIDER -->
+      <div class="fork-divider"></div>
+
+      <!-- RIGHT: Transfer Learning -->
+      <div class="fork-track">
+        <div class="track-label" style="background:var(--tl-l);color:var(--tl);">Transfer Learning</div>
+
+        <!-- What & Why -->
+        <div class="card" style="padding-left:28px;">
+          <div class="card-stripe" style="background:var(--tl);"></div>
+          <span class="card-icon">🔄</span>
+          <div class="card-title" style="color:var(--tl);">What & Why Transfer Learning?</div>
+          <div class="card-body">A pre-trained model has already learned <strong>general language patterns</strong> from massive data. Transfer learning reuses this for a new (but related) task — saving time, compute, and requiring far less labeled data. Early layers capture universal features; later layers are task-specific.</div>
+          <div class="tags">
+            <span class="tag">reuse knowledge</span>
+            <span class="tag">small datasets</span>
+            <span class="tag">faster convergence</span>
+          </div>
+        </div>
+
+        <!-- 3 TL Types -->
+        <div style="display:flex;flex-direction:column;gap:12px;">
+
+          <div class="card" style="padding-left:28px;">
+            <div class="card-stripe" style="background:var(--tl);"></div>
+            <span class="card-icon">🧊</span>
+            <div class="card-title" style="color:var(--tl);">Feature Extraction</div>
+            <div class="card-body">Pre-trained model used as a <strong>fixed feature extractor</strong>. All base weights are frozen. Only the final classification head is trained. Very fast; works best when the new task closely resembles the original training domain.</div>
+            <div class="tags"><span class="tag">frozen base</span><span class="tag">classifier head</span><span class="tag">fast</span></div>
+          </div>
+
+          <div class="card" style="padding-left:28px;">
+            <div class="card-stripe" style="background:var(--tl);"></div>
+            <span class="card-icon">🔧</span>
+            <div class="card-title" style="color:var(--tl);">Fine-Tuning (TL variant)</div>
+            <div class="card-body">Some or all pre-trained layers are <strong>unfrozen and updated</strong> on the new task's data. Allows deeper task-specific adaptation. Achieves better performance than pure feature extraction but requires more data and compute.</div>
+            <div class="tags"><span class="tag">unfrozen layers</span><span class="tag">task-specific</span><span class="tag">more data needed</span></div>
+          </div>
+
+          <div class="card" style="padding-left:28px;">
+            <div class="card-stripe" style="background:var(--tl);"></div>
+            <span class="card-icon">🌐</span>
+            <div class="card-title" style="color:var(--tl);">Domain Adaptation</div>
+            <div class="card-body">The task stays the same but the <strong>data distribution shifts</strong> (e.g., news text → medical text). Limited retraining aligns the model to the new domain. Improves accuracy in specialized fields without full retraining.</div>
+            <div class="tags"><span class="tag">distribution shift</span><span class="tag">specialized domain</span><span class="tag">limited retrain</span></div>
+          </div>
+
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="connector"><div class="connector-arrow"></div></div>
+
+  <!-- ══ COMPARISON ══ -->
+  <div>
+    <div class="phase-hd">
+      <span class="phase-tag" style="background:rgba(26,22,18,0.07);color:var(--muted);">Full Fine-Tuning vs PEFT vs Transfer Learning</span>
+      <div class="phase-rule"></div>
+    </div>
+    <div class="card" style="padding:0;overflow:hidden;">
+      <table class="compare-table">
+        <thead>
+          <tr>
+            <th>Dimension</th>
+            <th>Full Fine-Tuning</th>
+            <th>PEFT</th>
+            <th>Transfer Learning</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><strong>Parameters updated</strong></td>
+            <td>All</td>
+            <td>Small subset (&lt;1% typical)</td>
+            <td>Final layers / selected layers</td>
+          </tr>
+          <tr>
+            <td><strong>Memory cost</strong></td>
+            <td><span class="badge" style="background:#fdecea;color:#c62828;">High</span></td>
+            <td><span class="badge" style="background:#e8f4ed;color:#2d6a4f;">Low</span></td>
+            <td><span class="badge" style="background:#fff8e1;color:#8a6200;">Medium</span></td>
+          </tr>
+          <tr>
+            <td><strong>Training speed</strong></td>
+            <td>Slow</td>
+            <td>Fast</td>
+            <td>Fast → Medium</td>
+          </tr>
+          <tr>
+            <td><strong>Data required</strong></td>
+            <td>Large</td>
+            <td>Small–medium</td>
+            <td>Small (feature ext.) → medium (fine-tune)</td>
+          </tr>
+          <tr>
+            <td><strong>Accuracy</strong></td>
+            <td>Highest</td>
+            <td>Near full fine-tuning</td>
+            <td>Good; depends on domain similarity</td>
+          </tr>
+          <tr>
+            <td><strong>Risk of overfitting</strong></td>
+            <td>Higher</td>
+            <td>Lower</td>
+            <td>Lower</td>
+          </tr>
+          <tr>
+            <td><strong>Concept scope</strong></td>
+            <td>Training strategy</td>
+            <td>Fine-tuning strategy</td>
+            <td>Broader learning paradigm</td>
+          </tr>
+          <tr>
+            <td><strong>Best for</strong></td>
+            <td>Unlimited resources</td>
+            <td>Large models, constrained resources</td>
+            <td>Related tasks, small datasets</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <div class="connector"><div class="connector-arrow"></div></div>
+
+  <!-- ══ APPLICATIONS ══ -->
+  <div>
+    <div class="phase-hd">
+      <span class="phase-tag" style="background:var(--shared-l);color:var(--shared);">Real-World Applications</span>
+      <div class="phase-rule"></div>
+    </div>
+    <div class="apps-strip">
+      <div class="app-card">
+        <span class="app-icon">🤖</span>
+        <div class="app-title">Chatbots & Virtual Assistants</div>
+        <div class="app-desc">PEFT fine-tunes a base LLM for a specific brand voice or knowledge domain without retraining the whole model. Transfer learning adapts conversational patterns across languages.</div>
+      </div>
+      <div class="app-card">
+        <span class="app-icon">🏥</span>
+        <div class="app-title">Medical AI Systems</div>
+        <div class="app-desc">Domain adaptation shifts a general-language model to clinical text. LoRA fine-tunes on labeled medical QA datasets with limited annotated examples. Enables specialized diagnosis support.</div>
+      </div>
+      <div class="app-card">
+        <span class="app-icon">🎯</span>
+        <div class="app-title">Recommendation Systems</div>
+        <div class="app-desc">Feature extraction repurposes embeddings from pre-trained models as rich item/user representations. Transfer learning carries patterns from one product domain to another.</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="connector"><div class="connector-arrow"></div></div>
+
+  <!-- ══ TAKEAWAYS ══ -->
+  <div>
+    <div class="phase-hd">
+      <span class="phase-tag" style="background:rgba(26,22,18,0.07);color:var(--muted);">Key Takeaways</span>
+      <div class="phase-rule"></div>
+    </div>
+    <div class="takeaway-strip">
+      <div class="tk"><span class="tk-num">01</span>PEFT enables efficient fine-tuning by training only a tiny parameter subset</div>
+      <div class="tk"><span class="tk-num">02</span>Reduces cost and training time for large language models significantly</div>
+      <div class="tk"><span class="tk-num">03</span>Transfer learning reuses pre-trained knowledge for new but related tasks</div>
+      <div class="tk"><span class="tk-num">04</span>Both are essential in modern Generative AI development</div>
+      <div class="tk"><span class="tk-num">05</span>Together they make AI development practical and scalable at low cost</div>
+    </div>
+  </div>
+
+</div><!-- /pipeline -->
+
+</body>
+</html>
